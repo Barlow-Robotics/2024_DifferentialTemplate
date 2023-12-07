@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 import static edu.wpi.first.util.ErrorMessages.requireNonNullParam;

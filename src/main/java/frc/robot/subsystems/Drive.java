@@ -38,7 +38,7 @@ public class Drive extends SubsystemBase {
     WPI_TalonFX driveMotorRightLeader;
     WPI_TalonFX driveMotorRightFollower;
     
-    /* Constants */ // all wrong
+    /* Constants */
     public static final double InchesToMeters = 0.0254;
     public static final double TrackWidth = Units.inchesToMeters(26.5);
     public static final double CircumferenceWithTrackWidth = TrackWidth * Math.PI;
@@ -51,29 +51,25 @@ public class Drive extends SubsystemBase {
     public static final double WheelDiameter = Units.inchesToMeters(6.0);
     public static final double MetersPerRevolution = WheelDiameter * Math.PI;
     public static final double RevolutionsPerMeter = 1.0 / MetersPerRevolution;
-
     public static final double MetersPerSecondToCountsPerSecond = RevolutionsPerMeter * CountsPerWheelRevolution;
+
     public static final double kF = 0.048;
     public static final double kP = 0.005;
     public static final double kI = 0.0001; // 0.0001 original
     public static final double kD = 0.0;
     public static final int PID_id = 0;
 
-
     DifferentialDrive diffDrive;
 
     public final ADXRS450_Gyro gyro = new ADXRS450_Gyro();
     public final AHRS navX = new AHRS(edu.wpi.first.wpilibj.I2C.Port.kMXP);
 
-    
-    // private final DifferentialDriveKinematics kinematics = new
-    // DifferentialDriveKinematics(
-    // trackWidth);
     public final DifferentialDriveOdometry odometry;
 
     boolean simulationInitialized = false;
     private double lastLeftDistance;
     private double lastRightDistance;
+
     DifferentialDriveKinematics kinematics = new DifferentialDriveKinematics(TrackWidth);
     ADXRS450_GyroSim gyroSim = new ADXRS450_GyroSim(gyro);
 
@@ -114,7 +110,6 @@ public class Drive extends SubsystemBase {
         odometry = new DifferentialDriveOdometry(gyro.getRotation2d(), getLeftDistance(), getRightDistance());
 
         setDefaultNeutralMode();
-        // wpk gyro.reset();
 
         CreateNetworkTableEntries();
         SmartDashboard.putData("Nav X", navX);
@@ -145,8 +140,18 @@ public class Drive extends SubsystemBase {
                 .setDouble(driveMotorRightLeader.getClosedLoopError());
 
         NetworkTableInstance.getDefault().getEntry("drive/pitch").setDouble(getPitch());
+    }
 
+    private void setMotorConfig(WPI_TalonFX motor) {
+        // motor.configClosedloopRamp(ClosedVoltageRampingConstant);
+        // motor.configOpenloopRamp(ManualVoltageRampingConstant);
+        motor.config_kF(PID_id, kF);
+        motor.config_kP(PID_id, kP);
+        motor.config_kI(PID_id, kI);
+        motor.config_kD(PID_id, kD);
 
+        /* Config sensor used for Primary PID [Velocity] */
+        motor.configSelectedFeedbackSensor(TalonFXFeedbackDevice.IntegratedSensor, 0, 30);
     }
 
     public void setDefaultNeutralMode() {
@@ -154,11 +159,6 @@ public class Drive extends SubsystemBase {
         driveMotorRightLeader.setNeutralMode(NeutralMode.Brake);
     }
 
-    /**
-     * Sets the desired wheel speeds.
-     *
-     * @param speeds The desired wheel speeds.
-     */
     public void setSpeeds(DifferentialDriveWheelSpeeds speeds) {
         setSpeeds(speeds.leftMetersPerSecond, speeds.rightMetersPerSecond);
     }
@@ -168,12 +168,6 @@ public class Drive extends SubsystemBase {
         driveMotorRightLeader.set(TalonFXControlMode.PercentOutput, 0.0);
     }
 
-    /**
-     * Sets the desired wheel speeds.
-     *
-     * @param leftSpeed  The desired wheel speed in meters/second
-     * @param rightSpeed The desired wheel speed in meters/second
-     */
     public void setSpeeds(double leftSpeed, double rightSpeed) {
         driveMotorLeftLeader.set(TalonFXControlMode.Velocity,
                 (leftSpeed * MetersPerSecondToCountsPerSecond / 10.0));
@@ -285,49 +279,11 @@ public class Drive extends SubsystemBase {
         gyro.reset();
     }
 
-    private void CreateNetworkTableEntries() {
-        NetworkTableInstance.getDefault().getEntry("drive/left_motor_distance").setDouble(0.0);
-        NetworkTableInstance.getDefault().getEntry("drive/right_motor_distance").setDouble(0.0);
-        NetworkTableInstance.getDefault().getEntry("drive/rotation").setDouble(0.0);
-
-        NetworkTableInstance.getDefault().getEntry("drive/xSpeed").setDouble(0.0);
-        NetworkTableInstance.getDefault().getEntry("drive/rot").setDouble(0.0);
-        NetworkTableInstance.getDefault().getEntry("drive/arcadeDrive").setDouble(0.0);
-
-        NetworkTableInstance.getDefault().getEntry("drive/leftVolts").setDouble(0.0);
-        NetworkTableInstance.getDefault().getEntry("drive/rightVolts").setDouble(0.0);
-
-        NetworkTableInstance.getDefault().getEntry("drive/pitch").setDouble(0.0);
-    }
-
-    private void setMotorConfig(WPI_TalonFX motor) {
-        // motor.configClosedloopRamp(ClosedVoltageRampingConstant);
-        // motor.configOpenloopRamp(ManualVoltageRampingConstant);
-        motor.config_kF(PID_id, kF);
-        motor.config_kP(PID_id, kP);
-        motor.config_kI(PID_id, kI);
-        motor.config_kD(PID_id, kD);
-
-        /* Config sensor used for Primary PID [Velocity] */
-        motor.configSelectedFeedbackSensor(TalonFXFeedbackDevice.IntegratedSensor, 0, 30);
-    }
-
     public double getPitch() {
         return navX.getRoll();
     }
 
-    public void initSendable(SendableBuilder builder) {
-        super.initSendable(builder);
-        builder.setSmartDashboardType("Drive Subsystem");
-
-        builder.addDoubleProperty("Left Distance", this::getLeftDistance, null);
-        builder.addDoubleProperty("Right Distance", this::getRightDistance, null);
-
-        builder.addDoubleProperty("Left Speed", this::getLeftSpeed, null);
-        builder.addDoubleProperty("Right Speed", this::getRightSpeed, null);
-
-        builder.addDoubleProperty("Pitch", this::getPitch, null);
-    }
+    /* Simulation */
 
     public void simulationInit() {
         PhysicsSim.getInstance().addTalonFX(driveMotorLeftLeader, 0.25, 21777, false);
@@ -348,5 +304,37 @@ public class Drive extends SubsystemBase {
         int dev = SimDeviceDataJNI.getSimDeviceHandle("navX-Sensor[0]");
         SimDouble angle = new SimDouble(SimDeviceDataJNI.getSimValueHandle(dev, "Pitch"));
         angle.set(5.0);
+    }
+
+    /* SmartDashboard */
+
+    public void initSendable(SendableBuilder builder) {
+        super.initSendable(builder);
+        builder.setSmartDashboardType("Drive Subsystem");
+
+        builder.addDoubleProperty("Left Distance", this::getLeftDistance, null);
+        builder.addDoubleProperty("Right Distance", this::getRightDistance, null);
+
+        builder.addDoubleProperty("Left Speed", this::getLeftSpeed, null);
+        builder.addDoubleProperty("Right Speed", this::getRightSpeed, null);
+
+        builder.addDoubleProperty("Pitch", this::getPitch, null);
+    }
+
+    /* Network Tables */
+
+    private void CreateNetworkTableEntries() {
+        NetworkTableInstance.getDefault().getEntry("drive/left_motor_distance").setDouble(0.0);
+        NetworkTableInstance.getDefault().getEntry("drive/right_motor_distance").setDouble(0.0);
+        NetworkTableInstance.getDefault().getEntry("drive/rotation").setDouble(0.0);
+
+        NetworkTableInstance.getDefault().getEntry("drive/xSpeed").setDouble(0.0);
+        NetworkTableInstance.getDefault().getEntry("drive/rot").setDouble(0.0);
+        NetworkTableInstance.getDefault().getEntry("drive/arcadeDrive").setDouble(0.0);
+
+        NetworkTableInstance.getDefault().getEntry("drive/leftVolts").setDouble(0.0);
+        NetworkTableInstance.getDefault().getEntry("drive/rightVolts").setDouble(0.0);
+
+        NetworkTableInstance.getDefault().getEntry("drive/pitch").setDouble(0.0);
     }
 }

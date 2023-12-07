@@ -13,20 +13,21 @@ import frc.robot.subsystems.Drive;
 
 public class DriveRobot extends Command {
 
-    private float yawMultiplier = 1.0f;
-    private double leftVelocity;
-    private double rightVelocity;
-
+    /* Inputs */
     Drive driveSub;
     Joystick driverController;
     int controllerThrottleID;
     int controllerTurnID;
 
+    /* Variables & Constants */
+    private float yawMultiplier = 1.0f;
+    private double rateLimit = 7;
+    private double leftVelocity;
+    private double rightVelocity;
+
     public PIDController pid;
 
-    public String selectedTarget = "None";
-
-    SlewRateLimiter xAxisInputRamp = new SlewRateLimiter(7); // Need to test this value
+    SlewRateLimiter xAxisInputRamp = new SlewRateLimiter(rateLimit); 
 
 
     public DriveRobot(Drive d, Joystick driverController, int throttleID, int turnID) {
@@ -50,6 +51,7 @@ public class DriveRobot extends Command {
         if (Math.abs(x) < 0.01) {
             x = 0.0;
         }
+
         NetworkTableInstance.getDefault().getEntry("driverController/xRawAxis")
                 .setDouble(driverController.getRawAxis(controllerThrottleID));
 
@@ -81,6 +83,7 @@ public class DriveRobot extends Command {
 
     @Override
     public void end(boolean interrupted) {
+        driveSub.drive(0, 0, true);
     }
 
     @Override
